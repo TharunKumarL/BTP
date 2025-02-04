@@ -22,7 +22,7 @@ def explore_h5_file(file_path):
                 print("Shape:", obj.shape)
                 print("Dtype:", obj.dtype)
                 d=obj[:]
-                print("Data snippet:", d)  # Display first few elements
+                print("Data snippet:", d) 
                 return d
                 
             elif isinstance(obj, h5py.Group):
