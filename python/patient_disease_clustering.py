@@ -71,7 +71,7 @@ tissues = np.loadtxt('../dataset/donor_tissue.txt').astype(int)
 
 scores = []
 pvals = []
-types = ['F1 Diagnosis', 'ARI Cancers', 'ARI Tissues']
+types = ['ARI Cancers', 'ARI Tissues']
 v = adjusted_rand_score(cmap, lbls)
 p = random_test(G_pat.shape[0], 21, cmap, v)
 scores.append(v)
@@ -107,6 +107,4 @@ plt.close()
 min_len = min(len(types), len(scores))
 types = types[:min_len]
 scores = scores[:min_len]
-
-# Save predictions to predictions2.txt
 

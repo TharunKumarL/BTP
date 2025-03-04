@@ -1,71 +1,54 @@
-import h5py
 import numpy as np
-import os
-import xgboost as xgb
-from sklearn.preprocessing import MinMaxScaler
+import h5py
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import mean_squared_error
 
-# Function to explore and load H5 file
 def explore_h5_file(file_path):
     data = []
     with h5py.File(file_path, 'r') as file:
         file.visititems(lambda name, obj: data.extend(obj[:]) if isinstance(obj, h5py.Dataset) else None)
     return np.array(data)
 
-# Define file paths
-data_dir = "../preprocesseddata"
-results_dir = "../results"
-
-# Ensure results directory exists
-os.makedirs(results_dir, exist_ok=True)
-
 # Load embeddings
-disease_embeddings = explore_h5_file(os.path.join(data_dir, "G_diseases.h5py"))  # (21, 21)
-gene_embeddings = explore_h5_file(os.path.join(data_dir, "G_genes.h5py"))  # (15224, 70)
+gene_embeddings = explore_h5_file('../preprocesseddata/G_genes.h5py')
+disease_embeddings = explore_h5_file('../preprocesseddata/G_diseases.h5py')
 
-# Expand disease_embeddings to match the number of genes
-expanded_disease_embeddings = np.tile(disease_embeddings.mean(axis=0), (gene_embeddings.shape[0], 1))  # (15224, 21)
+# Ensure both embeddings have the same size
+max_dim = max(gene_embeddings.shape[1], disease_embeddings.shape[1])
 
-# Concatenate embeddings
-X = np.concatenate((expanded_disease_embeddings, gene_embeddings), axis=1)  # (15224, 91)
+def pad_embeddings(embeddings, target_dim):
+    pad_width = target_dim - embeddings.shape[1]
+    return np.pad(embeddings, ((0, 0), (0, pad_width)), mode='constant') if pad_width > 0 else embeddings
 
-# Normalize features
-scaler = MinMaxScaler()
-X = scaler.fit_transform(X)
+gene_embeddings = pad_embeddings(gene_embeddings, max_dim)
+disease_embeddings = pad_embeddings(disease_embeddings, max_dim)
 
-# Load or generate labels
-# Ideally, load ground-truth labels from a file (e.g., 'cancer_gene_labels.txt')
-# If not available, generate pseudo-labels using cosine similarity
-def cosine_similarity(a, b):
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+# Generate training data by concatenating gene and disease embeddings
+X = np.array([np.hstack((gene_embeddings[i], disease_embeddings[j])) 
+              for i in range(len(gene_embeddings)) for j in range(len(disease_embeddings))])
 
-y = []
-for i, gene in enumerate(X):
-    scores = [cosine_similarity(gene, disease) for disease in disease_embeddings]
-    best_cancer_type = np.argmax(scores)  # Get most similar cancer type
-    y.append(best_cancer_type)
+# Generate synthetic labels (replace with real scores if available)
+y = np.random.rand(X.shape[0])  
 
-y = np.array(y)
-
-# Split data into training and testing sets
+# Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train XGBoost model
-model = xgb.XGBClassifier(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
+# Initialize and train a Gradient Boosting model
+model = GradientBoostingRegressor(n_estimators=200, learning_rate=0.05, max_depth=4, random_state=42)
 model.fit(X_train, y_train)
 
-# Make predictions
+# Predict on the entire dataset (all gene-disease pairs)
+interaction_scores = model.predict(X).reshape(len(gene_embeddings), len(disease_embeddings))
+
+# Save scores to a file
+np.savetxt("../results/interaction_scores.txt", interaction_scores, fmt='%f')
+
+# Evaluate model performance on test set
 y_pred = model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+print(f"Mean Squared Error: {mse}")
 
-# Evaluate model
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Model Accuracy: {accuracy:.4f}")
-
-# Save predictions
-output_file = os.path.join(results_dir, "cancer_gene_predictions.txt")
-with open(output_file, "w") as f:
-    for i, pred in enumerate(y_pred):
-        f.write(f"Gene_{i+1}, Predicted_Cancer_Type_{pred}\n")
-
-print(f"Predictions saved to {output_file}")
+# Print a sample of the computed scores
+print("Sample Interaction Scores (Top 5 rows):")
+print(interaction_scores[:5])

@@ -1,4 +1,3 @@
-patient_id	cancer_type	drug	response
 1695	BRCA-US	doxorubicin	1
 1695	BRCA-US	cyclophosphamide	1
 1111	BRCA-US	doxorubicin	1
