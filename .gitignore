@@ -1,2 +1,4 @@
-myenv/
-.venv/
+./prog/vir/Include
+./prog/vir/Lib
+./prog/vir/Scripts
+./prog/__pycache__
