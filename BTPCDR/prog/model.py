@@ -1,11 +1,11 @@
 import keras.backend as K
-from keras.models import Model, Sequential
-from keras.layers import Input,InputLayer,Multiply,ZeroPadding2D
-from keras.layers import Conv2D, MaxPooling2D,Conv1D,MaxPooling1D
 from keras.layers import Dense,Activation,Dropout,Flatten,Concatenate
 from keras.layers import BatchNormalization
 from keras.layers import Lambda
 from keras.layers import Dropout,GlobalMaxPooling1D,GlobalAveragePooling1D
+from keras.models import Model, Sequential  
+from keras.layers import Input,InputLayer,Multiply,ZeroPadding2D
+from keras.layers import Conv2D, MaxPooling2D,Conv1D,MaxPooling1D
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.regularizers import l2

@@ -9,6 +9,12 @@ from sklearn import metrics
 from sklearn.metrics import roc_auc_score
 from sklearn import preprocessing
 import pandas as pd
+from keras.layers import Lambda
+from keras import optimizers,utils
+from keras.constraints import max_norm
+from keras import regularizers
+from keras.callbacks import ModelCheckpoint,Callback,EarlyStopping,History
+from keras.utils import plot_model
 import keras.backend as K
 from keras.models import Model, Sequential
 from keras.models import load_model
@@ -16,12 +22,7 @@ from keras.layers import Input,InputLayer,Multiply,ZeroPadding2D
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers import Dense,Activation,Dropout,Flatten,Concatenate
 from keras.layers import BatchNormalization
-from keras.layers import Lambda
-from keras import optimizers,utils
-from keras.constraints import max_norm
-from keras import regularizers
-from keras.callbacks import ModelCheckpoint,Callback,EarlyStopping,History
-from keras.utils import plot_model
+
 
 from tensorflow.keras.optimizers.legacy import Adam, SGD
 from keras.models import model_from_json
@@ -32,7 +33,7 @@ from model import KerasMultiSourceGCNModel
 import hickle as hkl
 import scipy.sparse as sp
 import argparse
-#####################################Settings#################################
+
 parser = argparse.ArgumentParser(description='Drug_response_pre')
 parser.add_argument('-gpu_id', dest='gpu_id', type=str, default='0', help='GPU devices')
 parser.add_argument('-use_mut', dest='use_mut', type=bool, default=True, help='use gene mutation or not')
@@ -55,7 +56,6 @@ model_suffix = ('with_mut' if use_mut else 'without_mut')+'_'+('with_gexp' if us
 GCN_deploy = '_'.join(map(str,args.unit_list)) + '_'+('bn' if args.use_bn else 'no_bn')+'_'+('relu' if args.use_relu else 'tanh')+'_'+('GMP' if args.use_GMP else 'GAP')
 model_suffix = model_suffix + '_' +GCN_deploy
 
-####################################Constants Settings###########################
 TCGA_label_set = ["ALL","BLCA","BRCA","CESC","DLBC","LIHC","LUAD",
                   "ESCA","GBM","HNSC","KIRC","LAML","LCML","LGG",
                   "LUSC","MESO","MM","NB","OV","PAAD","SCLC","SKCM",
