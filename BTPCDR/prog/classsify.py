@@ -71,6 +71,41 @@ Methylation_file = '%s/CCLE/genomic_methylation_561celllines_808genes_demap_feat
 IC50_thred_file = '%s/CCLE/IC50_thred.txt'%DPATH
 Max_atoms = 100
 
+def FeatureExtract(data_idx,drug_feature,mutation_feature,gexpr_feature,methylation_feature):
+    cancer_type_list = []
+    nb_instance = len(data_idx)
+    nb_mutation_feature = mutation_feature.shape[1]
+    nb_gexpr_features = gexpr_feature.shape[1]
+    nb_methylation_features = methylation_feature.shape[1]
+    drug_data = [[] for item in range(nb_instance)]
+    mutation_data = np.zeros((nb_instance,1, nb_mutation_feature,1),dtype='float32')
+    gexpr_data = np.zeros((nb_instance,nb_gexpr_features),dtype='float32') 
+    methylation_data = np.zeros((nb_instance, nb_methylation_features),dtype='float32') 
+    target = np.zeros(nb_instance,dtype='int16')
+    for idx in range(nb_instance):
+        cell_line_id,pubchem_id,binary_IC50,cancer_type = data_idx[idx]
+        #modify
+        feat_mat,adj_list,_ = drug_feature[str(pubchem_id)]
+        #fill drug data,padding to the same size with zeros
+        drug_data[idx] = CalculateGraphFeat(feat_mat,adj_list)
+        #randomlize X A
+        mutation_data[idx,0,:,0] = mutation_feature.loc[cell_line_id].values
+        gexpr_data[idx,:] = gexpr_feature.loc[cell_line_id].values
+        methylation_data[idx,:] = methylation_feature.loc[cell_line_id].values
+        target[idx] = binary_IC50
+        cancer_type_list.append([cancer_type,cell_line_id,pubchem_id])
+    return drug_data,mutation_data,gexpr_data,methylation_data,target,cancer_type_list
+
+#split into training and test set
+def DataSplit(data_idx,ratio = 0.95):
+    data_train_idx,data_test_idx = [], []
+    for each_type in TCGA_label_set:
+        data_subtype_idx = [item for item in data_idx if item[-1]==each_type]
+        train_list = random.sample(data_subtype_idx,int(ratio*len(data_subtype_idx)))
+        test_list = [item for item in data_subtype_idx if item not in train_list]
+        data_train_idx += train_list
+        data_test_idx += test_list
+    return data_train_idx,data_test_idx
 
 def MetadataGenerate(Drug_info_file,Cell_line_info_file,Genomic_mutation_file,Drug_feature_file,Gene_expression_file,Methylation_file,filtered,use_thred=True):
     #drug_id --> pubchem_id
@@ -137,16 +172,6 @@ def MetadataGenerate(Drug_info_file,Cell_line_info_file,Genomic_mutation_file,Dr
     print('%d instances across %d cell lines and %d drugs were generated.'%(len(data_idx),nb_celllines,nb_drugs))
     return mutation_feature, drug_feature,gexpr_feature,methylation_feature, data_idx
 
-#split into training and test set
-def DataSplit(data_idx,ratio = 0.95):
-    data_train_idx,data_test_idx = [], []
-    for each_type in TCGA_label_set:
-        data_subtype_idx = [item for item in data_idx if item[-1]==each_type]
-        train_list = random.sample(data_subtype_idx,int(ratio*len(data_subtype_idx)))
-        test_list = [item for item in data_subtype_idx if item not in train_list]
-        data_train_idx += train_list
-        data_test_idx += test_list
-    return data_train_idx,data_test_idx
 
 def NormalizeAdj(adj):
     adj = adj + np.eye(adj.shape[0])
@@ -182,33 +207,7 @@ def CalculateGraphFeat(feat_mat,adj_list):
     norm_adj_2 = NormalizeAdj(adj_2)
     adj_mat[:len(adj_list),:len(adj_list)] = norm_adj_
     adj_mat[len(adj_list):,len(adj_list):] = norm_adj_2    
-    return [feat,adj_mat]
-
-def FeatureExtract(data_idx,drug_feature,mutation_feature,gexpr_feature,methylation_feature):
-    cancer_type_list = []
-    nb_instance = len(data_idx)
-    nb_mutation_feature = mutation_feature.shape[1]
-    nb_gexpr_features = gexpr_feature.shape[1]
-    nb_methylation_features = methylation_feature.shape[1]
-    drug_data = [[] for item in range(nb_instance)]
-    mutation_data = np.zeros((nb_instance,1, nb_mutation_feature,1),dtype='float32')
-    gexpr_data = np.zeros((nb_instance,nb_gexpr_features),dtype='float32') 
-    methylation_data = np.zeros((nb_instance, nb_methylation_features),dtype='float32') 
-    target = np.zeros(nb_instance,dtype='int16')
-    for idx in range(nb_instance):
-        cell_line_id,pubchem_id,binary_IC50,cancer_type = data_idx[idx]
-        #modify
-        feat_mat,adj_list,_ = drug_feature[str(pubchem_id)]
-        #fill drug data,padding to the same size with zeros
-        drug_data[idx] = CalculateGraphFeat(feat_mat,adj_list)
-        #randomlize X A
-        mutation_data[idx,0,:,0] = mutation_feature.loc[cell_line_id].values
-        gexpr_data[idx,:] = gexpr_feature.loc[cell_line_id].values
-        methylation_data[idx,:] = methylation_feature.loc[cell_line_id].values
-        target[idx] = binary_IC50
-        cancer_type_list.append([cancer_type,cell_line_id,pubchem_id])
-    return drug_data,mutation_data,gexpr_data,methylation_data,target,cancer_type_list
-    
+    return [feat,adj_mat]  
 def precision(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
