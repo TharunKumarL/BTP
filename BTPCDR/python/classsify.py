@@ -148,6 +148,7 @@ def MetadataGenerate(Drug_info_file,Cell_line_info_file,Genomic_mutation_file,Dr
     methylation_feature = pd.read_csv(Methylation_file,sep=',',header=0,index_col=[0])
     assert methylation_feature.shape[0]==gexpr_feature.shape[0]==mutation_feature.shape[0]        
     experiment_data = pd.read_csv(Cancer_response_exp_file,sep=',',header=0,index_col=[0])
+    
     #filter experiment data
     drug_match_list=[item for item in experiment_data.index if item.split(':')[1] in drugid2pubchemid.keys()]
     experiment_data_filtered = experiment_data.loc[drug_match_list]

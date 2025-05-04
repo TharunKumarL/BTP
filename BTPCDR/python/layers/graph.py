@@ -17,12 +17,7 @@ class GraphLayer(keras.layers.Layer):
                  step_num=1,
                  activation=None,
                  **kwargs):
-        """Initialize the layer.
 
-        :param step_num: Two nodes are considered as connected if they could be reached in `step_num` steps.
-        :param activation: The activation function after convolution.
-        :param kwargs: Other arguments for parent class.
-        """
         self.supports_masking = True
         self.step_num = step_num
         self.activation = keras.activations.get(activation)
@@ -38,12 +33,6 @@ class GraphLayer(keras.layers.Layer):
         return dict(list(base_config.items()) + list(config.items()))
 
     def _get_walked_edges(self, edges, step_num):
-        """Get the connection graph within `step_num` steps
-
-        :param edges: The graph in single step.
-        :param step_num: Number of steps.
-        :return: The new graph that has the same shape with `edges`.
-        """
         if step_num <= 1:
             return edges
         deeper = self._get_walked_edges(K.batch_dot(edges, edges), step_num // 2)
@@ -64,10 +53,6 @@ class GraphLayer(keras.layers.Layer):
 
 
 class GraphConv(GraphLayer):
-    """Graph convolutional layer.
-
-    h_i^{(t)} = \sigma \left ( \frac{ G_i^T (h_i^{(t - 1)} W + b)}{\sum G_i}  \right )
-    """
 
     def __init__(self,
                  units,
@@ -79,19 +64,7 @@ class GraphConv(GraphLayer):
                  bias_regularizer=None,
                  bias_constraint=None,
                  **kwargs):
-        """Initialize the layer.
 
-        :param units: Number of new states. If the input shape is (batch_size, node_num, feature_len), then the output
-                      shape is (batch_size, node_num, units).
-        :param kernel_initializer: The initializer of the kernel weight matrix.
-        :param kernel_regularizer: The regularizer of the kernel weight matrix.
-        :param kernel_constraint:  The constraint of the kernel weight matrix.
-        :param use_bias: Whether to use bias term.
-        :param bias_initializer: The initializer of the bias vector.
-        :param bias_regularizer: The regularizer of the bias vector.
-        :param bias_constraint: The constraint of the bias vector.
-        :param kwargs: Other arguments for parent class.
-        """
         self.units = units
         self.kernel_initializer = keras.initializers.get(kernel_initializer)
         self.kernel_regularizer = keras.regularizers.get(kernel_regularizer)
