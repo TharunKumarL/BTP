@@ -256,7 +256,6 @@ class MyCallback(Callback):
         print ('roc-val: %.4f, pr-val:%.4f' % (roc_val,pr_val))
         if roc_val > self.best:
             self.best = roc_val
-
             self.wait = 0
             self.best_weight = self.model.get_weights()
         else:
@@ -265,10 +264,6 @@ class MyCallback(Callback):
                 self.stopped_epoch = epoch
                 self.model.stop_training = True
         return
-        
-
-
-
 def ModelTraining(model,X_drug_data_train,X_mutation_data_train,X_gexpr_data_train,X_methylation_data_train,Y_train,validation_data,nb_epoch=10):
     optimizer = Adam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
     model.compile(optimizer = optimizer,loss='binary_crossentropy',metrics=['accuracy',precision,recall,f1_score,average_precision])
